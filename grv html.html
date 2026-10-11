@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ГРИНВИЧ — атмосферные кофейни</title>
+<meta name="description" content="Сеть атмосферных кофеен ГРИНВИЧ. Онлайн-меню, бонусы, бронирование стола, карта точек.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+:root{
+  --coffee-dark:#1B110B;
+  --coffee:#3B2417;
+  --terra:#B85C38;
+  --terra-dark:#8F4426;
+  --ochre:#D9A15B;
+  --cream:#F7F1E8;
+  --cream-2:#EFE5D5;
+  --green:#4A5D3F;
+  --text:#2A1E16;
+  --muted:#7A6A5C;
+  --line:rgba(43,30,22,.12);
+  --shadow:0 20px 50px -20px rgba(43,30,22,.35);
+  --radius:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Jost',sans-serif;
+  font-weight:400;
+  color:var(--text);
+  background:var(--cream);
+  line-height:1.6;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.06;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+h1,h2,h3,h4{font-family:'Cormorant Garamond',serif;font-weight:600;color:var(--coffee-dark);line-height:1.1;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.container{width:min(1200px,92%);margin:0 auto}
+.hand{font-family:'Caveat',cursive;color:var(--terra);font-size:1.35rem;font-weight:600}
+.eyebrow{
+  font-family:'Caveat',cursive;font-size:1.5rem;color:var(--terra);
+  display:inline-block;margin-bottom:.4rem;
+}
+
+/* ---------- NAV ---------- */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:18px 0;transition:.4s ease;
+  background:transparent;
+}
+nav.scrolled{
+  background:rgba(247,241,232,.94);
+  backdrop-filter:blur(12px);
+  box-shadow:0 1px 0 var(--line);
+  padding:10px 0;
+}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:2rem}
+.logo{display:flex;align-items:center;gap:.7rem;cursor:pointer}
+.logo-mark{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--coffee);color:var(--ochre);
+  display:grid;place-items:center;
+  font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.4rem;
+  border:2px solid var(--terra);position:relative;
+}
+.logo-mark::after{
+  content:"";position:absolute;right:-6px;top:50%;transform:translateY(-50%);
+  width:12px;height:12px;border:2px solid var(--terra);border-radius:50%;
+  border-left-color:transparent;border-top-color:transparent;border-bottom-color:transparent;
+}
+.logo-text{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.35rem;letter-spacing:.02em;color:var(--coffee-dark)}
+.logo-text small{display:block;font-family:'Jost',sans-serif;font-size:.62rem;letter-spacing:.3em;color:var(--terra);font-weight:500;text-transform:uppercase}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{
+  font-size:.92rem;font-weight:500;letter-spacing:.02em;
+  position:relative;padding:4px 0;transition:.3s;
+}
+.nav-links a::after{
+  content:"";position:absolute;left:0;bottom:0;height:1.5px;width:0;
+  background:var(--terra);transition:.35s;
+}
+.nav-links a:hover::after{width:100%}
+.nav-cta{
+  background:var(--terra);color:#fff;padding:11px 22px;border-radius:999px;
+  font-size:.88rem;font-weight:500;letter-spacing:.02em;transition:.3s;
+  border:none;cursor:pointer;font-family:inherit;
+}
+.nav-cta:hover{background:var(--terra-dark);transform:translateY(-2px);box-shadow:0 10px 24px -10px var(--terra)}
+.burger{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:8px}
+.burger span{width:26px;height:2px;background:var(--coffee-dark);transition:.3s}
+
+/* ---------- HERO ---------- */
+.hero{
+  min-height:100vh;position:relative;display:flex;align-items:center;
+  background:
+    linear-gradient(180deg,rgba(27,17,11,.55) 0%,rgba(27,17,11,.75) 100%),
+    url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1920&q=80') center/cover fixed;
+  color:var(--cream);padding:120px 0 80px;
+}
+.hero-inner{position:relative;z-index:2;max-width:780px}
+.hero .eyebrow{color:var(--ochre)}
+.hero h1{
+  color:#fff;font-size:clamp(2.8rem,7vw,5.6rem);font-weight:500;
+  line-height:.98;margin:.6rem 0 1.5rem;letter-spacing:-.02em;
+}
+.hero h1 em{font-style:italic;color:var(--ochre);font-weight:400}
+.hero p{
+  font-size:1.12rem;font-weight:300;max-width:520px;color:rgba(247,241,232,.85);
+  margin-bottom:2.2rem;
+}
+.hero-actions{display:flex;gap:1rem;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:.6rem;
+  padding:15px 32px;border-radius:999px;font-size:.95rem;font-weight:500;
+  letter-spacing:.02em;cursor:pointer;transition:.35s;border:1.5px solid transparent;
+  font-family:'Jost',sans-serif;
+}
+.btn-primary{background:var(--terra);color:#fff}
+.btn-primary:hover{background:var(--terra-dark);transform:translateY(-3px);box-shadow:0 16px 30px -14px var(--terra)}
+.btn-ghost{background:transparent;border-color:rgba(255,255,255,.5);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.1);border-color:#fff}
+.hero-scroll{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  color:rgba(255,255,255,.6);font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;
+  animation:bob 2.4s ease-in-out infinite;
+}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
+
+/* ---------- SECTION ---------- */
+section{padding:110px 0;position:relative}
+.section-head{text-align:center;max-width:680px;margin:0 auto 4rem}
+.section-head h2{font-size:clamp(2rem,4.5vw,3.4rem);margin:.4rem 0 1rem}
+.section-head p{color:var(--muted);font-size:1.05rem;font-weight:300}
+
+/* ---------- MENU ---------- */
+#menu{background:var(--cream)}
+.menu-controls{display:flex;flex-direction:column;gap:1.6rem;margin-bottom:3rem}
+.tabs{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
+.tab{
+  padding:11px 24px;border-radius:999px;background:transparent;
+  border:1.5px solid var(--line);cursor:pointer;font-family:inherit;
+  font-size:.92rem;font-weight:500;color:var(--muted);transition:.3s;
+}
+.tab:hover{border-color:var(--terra);color:var(--terra)}
+.tab.active{background:var(--coffee-dark);color:var(--cream);border-color:var(--coffee-dark)}
+.filters{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;align-items:center}
+.filters span{font-size:.85rem;color:var(--muted);margin-right:.3rem}
+.chip{
+  padding:7px 16px;border-radius:999px;background:var(--cream-2);
+  border:1.5px solid transparent;cursor:pointer;font-family:inherit;
+  font-size:.82rem;font-weight:500;color:var(--text);transition:.25s;
+  display:inline-flex;align-items:center;gap:.4rem;
+}
+.chip:hover{border-color:var(--terra)}
+.chip.active{background:var(--terra);color:#fff}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.chip[data-tag="lactose-free"] .dot{background:#4A7A96}
+.chip[data-tag="gluten-free"] .dot{background:var(--ochre)}
+.chip[data-tag="new"] .dot{background:var(--terra)}
+
+.menu-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.8rem;
+}
+.menu-card{
+  background:#fff;border-radius:var(--radius);overflow:hidden;
+  transition:.4s ease;position:relative;
+  box-shadow:0 4px 18px -10px rgba(43,30,22,.18);
+  display:flex;flex-direction:column;
+}
+.menu-card:hover{transform:translateY(-8px);box-shadow:var(--shadow)}
+.menu-card .photo{
+  aspect-ratio:4/3;overflow:hidden;background:var(--cream-2);position:relative;
+}
+.menu-card .photo img{width:100%;height:100%;object-fit:cover;transition:.7s}
+.menu-card:hover .photo img{transform:scale(1.06)}
+.badge{
+  position:absolute;top:12px;left:12px;background:var(--terra);color:#fff;
+  padding:4px 12px;border-radius:999px;font-size:.72rem;font-weight:600;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.menu-card .body{padding:1.3rem 1.4rem 1.5rem;flex:1;display:flex;flex-direction:column}
+.menu-card h3{font-size:1.35rem;margin-bottom:.35rem;font-weight:600}
+.menu-card .desc{font-size:.9rem;color:var(--muted);font-weight:300;flex:1;margin-bottom:1rem}
+.tags{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1rem}
+.tag{
+  font-size:.68rem;padding:3px 9px;border-radius:999px;background:var(--cream-2);
+  color:var(--muted);font-weight:500;letter-spacing:.03em;
+}
+.tag.vegan{background:rgba(74,93,63,.12);color:var(--green)}
+.tag.lactose-free{background:rgba(74,122,150,.12);color:#3D6478}
+.tag.gluten-free{background:rgba(217,161,91,.18);color:#8a6427}
+.menu-card .price{
+  font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;
+  color:var(--terra-dark);display:flex;align-items:baseline;gap:.3rem;
+}
+.menu-card .price::after{content:"";}
+
+/* ---------- LOCATIONS ---------- */
+#locations{background:var(--coffee-dark);color:var(--cream);padding-bottom:90px}
+#locations .section-head h2{color:#fff}
+#locations .section-head p{color:rgba(247,241,232,.6)}
+#locations .eyebrow{color:var(--ochre)}
+.map-wrap{
+  display:grid;grid-template-columns:1.5fr 1fr;gap:2rem;align-items:stretch;
+}
+#map{
+  height:560px;border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 30px 60px -30px rgba(0,0,0,.6);
+  border:1px solid rgba(247,241,232,.1);
+}
+.leaflet-popup-content-wrapper{
+  background:var(--cream);color:var(--text);border-radius:14px;
+  font-family:'Jost',sans-serif;
+}
+.leaflet-popup-content{margin:16px 18px;font-size:.9rem}
+.leaflet-popup-content h4{
+  font-family:'Cormorant Garamond',serif;font-size:1.25rem;
+  margin-bottom:.4rem;color:var(--coffee-dark);
+}
+.leaflet-popup-content .route-btn{
+  display:inline-block;margin-top:.7rem;background:var(--terra);color:#fff;
+  padding:7px 16px;border-radius:999px;font-size:.8rem;font-weight:500;
+  cursor:pointer;border:none;font-family:inherit;
+}
+.loc-list{display:flex;flex-direction:column;gap:.8rem;max-height:560px;overflow-y:auto;padding-right:6px}
+.loc-list::-webkit-scrollbar{width:4px}
+.loc-list::-webkit-scrollbar-thumb{background:var(--terra);border-radius:2px}
+.loc-card{
+  background:rgba(247,241,232,.05);border:1px solid rgba(247,241,232,.1);
+  padding:1.2rem 1.3rem;border-radius:14px;cursor:pointer;transition:.3s;
+}
+.loc-card:hover{background:rgba(247,241,232,.1);border-color:var(--terra)}
+.loc-card.active{background:rgba(184,92,56,.18);border-color:var(--terra)}
+.loc-card h4{color:#fff;font-size:1.2rem;margin-bottom:.35rem;display:flex;justify-content:space-between;align-items:center}
+.loc-card .meta{font-size:.85rem;color:rgba(247,241,232,.65);font-weight:300}
+.loc-card .meta + .meta{margin-top:.2rem}
+.loc-card .hours{
+  display:inline-block;margin-top:.6rem;font-size:.75rem;color:var(--ochre);
+  background:rgba(217,161,91,.12);padding:3px 10px;border-radius:999px;
+}
+
+/* ---------- BONUSES ---------- */
+#bonuses{background:linear-gradient(180deg,var(--cream) 0%,var(--cream-2) 100%)}
+.bonus-wrap{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1000px;margin:0 auto}
+.bonus-art{
+  position:relative;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,var(--ochre),var(--terra) 60%,var(--terra-dark));
+  box-shadow:0 40px 80px -30px rgba(143,68,38,.5);
+  display:grid;place-items:center;color:#fff;
+}
+.bonus-art::before{
+  content:"";position:absolute;inset:24px;border:2px dashed rgba(255,255,255,.35);border-radius:50%;
+}
+.bonus-art .num{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,7vw,5rem);font-weight:700;line-height:1}
+.bonus-art .lbl{font-size:.85rem;letter-spacing:.25em;text-transform:uppercase;opacity:.85;margin-top:.4rem}
+.bonus-art .hand{position:absolute;color:#fff;font-size:1.4rem;transform:rotate(-8deg);top:12%;left:-4%}
+.bonus-form{background:#fff;padding:2.4rem;border-radius:var(--radius);box-shadow:var(--shadow)}
+.bonus-form h3{font-size:1.9rem;margin-bottom:.5rem}
+.bonus-form > p{color:var(--muted);font-size:.95rem;margin-bottom:1.6rem;font-weight:300}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:.4rem;font-weight:500}
+.field input,.field select,.field textarea{
+  width:100%;padding:13px 16px;border:1.5px solid var(--line);border-radius:12px;
+  font-family:inherit;font-size:.95rem;color:var(--text);background:var(--cream);
+  transition:.25s;outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--terra);background:#fff}
+.bonus-result{
+  margin-top:1.2rem;padding:1.2rem 1.4rem;border-radius:14px;
+  background:linear-gradient(135deg,var(--coffee-dark),var(--coffee));color:var(--cream);
+  display:none;
+}
+.bonus-result.show{display:block;animation:fadeUp .5s ease}
+.bonus-result .bal{font-family:'Cormorant Garamond',serif;font-size:2.6rem;font-weight:700;color:var(--ochre);line-height:1}
+.bonus-result .name{font-size:.95rem;opacity:.85;margin-bottom:.3rem}
+.bonus-result .lvl{display:inline-block;margin-top:.7rem;font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;background:rgba(217,161,91,.2);color:var(--ochre);padding:4px 12px;border-radius:999px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ---------- BOOKING ---------- */
+#booking{background:var(--cream-2)}
+.booking-wrap{max-width:760px;margin:0 auto;background:#fff;padding:3rem;border-radius:var(--radius);box-shadow:var(--shadow)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-row.full{grid-template-columns:1fr}
+.booking-success{
+  text-align:center;padding:2rem 1rem;display:none;
+}
+.booking-success.show{display:block;animation:fadeUp .5s ease}
+.booking-success .check{
+  width:70px;height:70px;border-radius:50%;background:var(--green);color:#fff;
+  display:grid;place-items:center;margin:0 auto 1.2rem;font-size:2rem;
+}
+.booking-success h3{font-size:1.8rem;margin-bottom:.5rem}
+.booking-success p{color:var(--muted)}
+
+/* ---------- PROMOS ---------- */
+#promos{background:var(--cream)}
+.promo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.8rem}
+.promo-card{
+  background:#fff;border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 4px 18px -10px rgba(43,30,22,.18);transition:.4s;
+  display:flex;flex-direction:column;
+}
+.promo-card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.promo-card .photo{aspect-ratio:16/9;overflow:hidden}
+.promo-card .photo img{width:100%;height:100%;object-fit:cover;transition:.7s}
+.promo-card:hover .photo img{transform:scale(1.06)}
+.promo-card .body{padding:1.5rem;flex:1;display:flex;flex-direction:column}
+.promo-card .date{font-size:.78rem;color:var(--terra);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;font-weight:500}
+.promo-card h3{font-size:1.5rem;margin-bottom:.6rem}
+.promo-card p{font-size:.92rem;color:var(--muted);font-weight:300;flex:1}
+
+/* ---------- GALLERY ---------- */
+#gallery{background:var(--coffee-dark);padding-bottom:120px}
+#gallery .section-head h2{color:#fff}
+#gallery .section-head p{color:rgba(247,241,232,.6)}
+#gallery .eyebrow{color:var(--ochre)}
+.gallery-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;
+  grid-auto-rows:180px;
+}
+.gallery-grid .g-item{
+  overflow:hidden;border-radius:14px;cursor:pointer;position:relative;
+  background:var(--coffee);
+}
+.gallery-grid .g-item img{width:100%;height:100%;object-fit:cover;transition:.7s}
+.gallery-grid .g-item:hover img{transform:scale(1.07)}
+.gallery-grid .g-item::after{
+  content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(27,17,11,.5));
+  opacity:0;transition:.4s;
+}
+.gallery-grid .g-item:hover::after{opacity:1}
+.g-item.tall{grid-row:span 2}
+.g-item.wide{grid-column:span 2}
+
+/* ---------- FOOTER ---------- */
+footer{background:var(--coffee-dark);color:rgba(247,241,232,.7);padding:70px 0 30px;border-top:1px solid rgba(247,241,232,.08)}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.foot-brand .logo-text{color:#fff}
+.foot-brand p{font-size:.9rem;font-weight:300;margin-top:1rem;max-width:280px;line-height:1.7}
+.foot-col h4{color:#fff;font-family:'Jost',sans-serif;font-size:.85rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.2rem;font-weight:500}
+.foot-col ul{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+.foot-col a{font-size:.9rem;font-weight:300;transition:.25s;cursor:pointer}
+.foot-col a:hover{color:var(--ochre)}
+.foot-bottom{border-top:1px solid rgba(247,241,232,.08);padding-top:1.5rem;display:flex;justify-content:space-between;font-size:.8rem;font-weight:300;flex-wrap:wrap;gap:1rem}
+.admin-link{cursor:pointer;opacity:.5;transition:.25s}
+.admin-link:hover{opacity:1;color:var(--ochre)}
+
+/* ---------- ADMIN ---------- */
+.admin-fab{
+  position:fixed;bottom:24px;right:24px;z-index:900;
+  width:52px;height:52px;border-radius:50%;background:var(--coffee-dark);color:var(--ochre);
+  border:2px solid var(--terra);cursor:pointer;display:grid;place-items:center;
+  box-shadow:0 12px 30px -10px rgba(0,0,0,.4);transition:.3s;font-size:1.2rem;
+}
+.admin-fab:hover{transform:scale(1.08) rotate(45deg)}
+.modal{
+  position:fixed;inset:0;background:rgba(27,17,11,.75);backdrop-filter:blur(6px);
+  z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal.show{display:flex;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{
+  background:var(--cream);border-radius:var(--radius);width:min(720px,100%);
+  max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 40px 80px -20px rgba(0,0,0,.6);
+}
+.modal-head{padding:1.5rem 1.8rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:1.6rem}
+.modal-close{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1}
+.modal-body{padding:1.8rem;overflow-y:auto}
+.admin-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.admin-tabs button{
+  padding:8px 18px;border-radius:999px;border:1.5px solid var(--line);
+  background:transparent;cursor:pointer;font-family:inherit;font-size:.85rem;
+  font-weight:500;color:var(--muted);transition:.25s;
+}
+.admin-tabs button.active{background:var(--coffee-dark);color:var(--cream);border-color:var(--coffee-dark)}
+.admin-row{
+  display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.6rem;
+  align-items:center;padding:.7rem 0;border-bottom:1px solid var(--line);
+}
+.admin-row input{width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff}
+.admin-row .del{background:none;border:none;color:var(--terra);cursor:pointer;font-size:1.2rem;padding:4px 8px}
+.admin-note{font-size:.82rem;color:var(--muted);background:var(--cream-2);padding:.9rem 1.1rem;border-radius:10px;margin-bottom:1.2rem;font-weight:300}
+.admin-note b{color:var(--terra)}
+
+/* ---------- TOAST ---------- */
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translate(-50%,120%);
+  background:var(--coffee-dark);color:var(--cream);padding:14px 26px;border-radius:999px;
+  font-size:.9rem;z-index:3000;transition:.4s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow);
+  border:1px solid rgba(217,161,91,.3);
+}
+.toast.show{transform:translate(-50%,0)}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:900px){
+  .nav-links{display:none}
+  .burger{display:flex}
+  .nav-links.open{
+    display:flex;position:absolute;top:100%;left:0;right:0;flex-direction:column;
+    background:var(--cream);padding:1.5rem 5%;gap:1rem;box-shadow:var(--shadow);
+    border-top:1px solid var(--line);
+  }
+  .map-wrap{grid-template-columns:1fr}
+  #map{height:400px}
+  .loc-list{max-height:none}
+  .bonus-wrap{grid-template-columns:1fr;gap:2.5rem}
+  .bonus-art{max-width:320px;margin:0 auto}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:2rem}
+  .gallery-grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:150px}
+  .g-item.wide{grid-column:span 2}
+  section{padding:80px 0}
+  .booking-wrap{padding:2rem 1.4rem}
+}
+@media (max-width:560px){
+  .form-row{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:1fr}
+  .menu-grid{grid-template-columns:1fr}
+  .hero h1{font-size:2.6rem}
+  .admin-row{grid-template-columns:1fr;gap:.3rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav id="nav">
+  <div class="container nav-inner">
+    <div class="logo" onclick="scrollTo({top:0,behavior:'smooth'})">
+      <div class="logo-mark">Г</div>
+      <div class="logo-text">ГРИНВИЧ<small>Coffee house</small></div>
+    </div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#menu">Меню</a></li>
+      <li><a href="#locations">Кофейни</a></li>
+      <li><a href="#bonuses">Бонусы</a></li>
+      <li><a href="#promos">Акции</a></li>
+      <li><a href="#gallery">Галерея</a></li>
+    </ul>
+    <button class="nav-cta" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">Забронировать</button>
+    <button class="burger" id="burger" aria-label="Меню"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="container hero-inner">
+    <span class="eyebrow">Сеть атмосферных кофеен</span>
+    <h1>Кофе, который<br>помнит <em>вас</em></h1>
+    <p>Обжариваем зерно малыми партиями, печём круассаны каждое утро и знаем вашего пса по имени. Заходите — у нас всегда горит свет и пахнет корицей.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" onclick="document.getElementById('menu').scrollIntoView({behavior:'smooth'})">Смотреть меню</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('locations').scrollIntoView({behavior:'smooth'})">Найти кофейню</button>
+    </div>
+  </div>
+  <div class="hero-scroll">Листайте вниз</div>
+</header>
+
+<!-- ============ MENU ============ -->
+<section id="menu">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Свежее и честное</span>
+      <h2>Наше меню</h2>
+      <p>Всё, что мы готовим — из локальных продуктов. Фильтруйте по вкусам и предпочтениям.</p>
+    </div>
+
+    <div class="menu-controls">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-cat="all">Всё</button>
+        <button class="tab" data-cat="coffee">Кофе</button>
+        <button class="tab" data-cat="desserts">Десерты</button>
+        <button class="tab" data-cat="breakfast">Завтраки</button>
+      </div>
+      <div class="filters" id="filters">
+        <span>Фильтры:</span>
+        <button class="chip" data-tag="vegan"><span class="dot"></span>Вегетарианское</button>
+        <button class="chip" data-tag="lactose-free"><span class="dot"></span>Безлактозное</button>
+        <button class="chip" data-tag="gluten-free"><span class="dot"></span>Без глютена</button>
+      </div>
+    </div>
+
+    <div class="menu-grid" id="menuGrid"></div>
+  </div>
+</section>
+
+<!-- ============ LOCATIONS ============ -->
+<section id="locations">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Найдите нас</span>
+      <h2>Наши кофейни</h2>
+      <p>Пять точек в городе. Выберите ближайшую — и постройте маршрут в один клик.</p>
+    </div>
+    <div class="map-wrap">
+      <div id="map"></div>
+      <div class="loc-list" id="locList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BONUSES ============ -->
+<section id="bonuses">
+  <div class="container">
+    <div class="bonus-wrap">
+      <div class="bonus-art">
+        <span class="hand">1 балл = 1 ₽</span>
+        <div style="text-align:center">
+          <div class="num" id="bonusDisplay">0</div>
+          <div class="lbl">баллов на карте</div>
+        </div>
+      </div>
+      <div>
+        <div class="bonus-form">
+          <span class="eyebrow">Программа лояльности</span>
+          <h3>Проверьте свой баланс</h3>
+          <p>Введите номер телефона, который оставили при первом заказе — и увидите, сколько баллов уже накопили.</p>
+          <div class="field">
+            <label>Номер телефона</label>
+            <input type="tel" id="bonusPhone" placeholder="+7 (___) ___-__-__" autocomplete="tel">
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="checkBonus()">Узнать баланс</button>
+          <div class="bonus-result" id="bonusResult"></div>
+          <p style="font-size:.78rem;color:var(--muted);margin-top:1rem;text-align:center;font-weight:300">
+            Демо-номера для проверки: <b style="color:var(--terra)">+7 900 123-45-67</b>, <b style="color:var(--terra)">+7 900 000-11-22</b>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOOKING ============ -->
+<section id="booking">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Забронируйте столик</span>
+      <h2>Забронировать стол</h2>
+      <p>Оставьте заявку — подтверждение придёт на почту или в СМС в течение 5 минут.</p>
+    </div>
+    <div class="booking-wrap">
+      <form id="bookingForm" onsubmit="submitBooking(event)">
+        <div class="form-row">
+          <div class="field">
+            <label>Кофейня</label>
+            <select id="bLocation" required></select>
+          </div>
+          <div class="field">
+            <label>Гостей</label>
+            <select id="bGuests" required>
+              <option value="1">1 гость</option>
+              <option value="2" selected>2 гостя</option>
+              <option value="3">3 гостя</option>
+              <option value="4">4 гостя</option>
+              <option value="5">5 гостей</option>
+              <option value="6+">6 и больше</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Дата</label>
+            <input type="date" id="bDate" required>
+          </div>
+          <div class="field">
+            <label>Время</label>
+            <select id="bTime" required>
+              <option>09:00</option><option>10:00</option><option>11:00</option>
+              <option>12:00</option><option>13:00</option><option>14:00</option>
+              <option>15:00</option><option>16:00</option><option>17:00</option>
+              <option selected>18:00</option><option>19:00</option><option>20:00</option>
+              <option>21:00</option><option>22:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Имя</label>
+            <input type="text" id="bName" placeholder="Как к вам обращаться" required>
+          </div>
+          <div class="field">
+            <label>Телефон</label>
+            <input type="tel" id="bPhone" placeholder="+7 (___) ___-__-__" required>
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="field">
+            <label>Email для подтверждения</label>
+            <input type="email" id="bEmail" placeholder="you@example.com" required>
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="field">
+            <label>Пожелания (необязательно)</label>
+            <textarea id="bNote" rows="2" placeholder="Например: столик у окна"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.5rem">Забронировать стол</button>
+      </form>
+
+      <div class="booking-success" id="bookingSuccess">
+        <div class="check">✓</div>
+        <h3>Заявка принята!</h3>
+        <p id="bookingSummary"></p>
+        <p style="margin-top:1rem;font-size:.9rem">Подтверждение отправим на указанные контакты. До встречи!</p>
+        <button class="btn btn-primary" style="margin-top:1.5rem" onclick="resetBooking()">Забронировать ещё</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROMOS ============ -->
+<section id="promos">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Что нового</span>
+      <h2>Акции и события</h2>
+      <p>Следите за новостями — здесь появляется всё самое свежее.</p>
+    </div>
+    <div class="promo-grid" id="promoGrid"></div>
+  </div>
+</section>
+
+<!-- ============ GALLERY ============ -->
+<section id="gallery">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Атмосфера</span>
+      <h2>Как у нас внутри</h2>
+      <p>Тёплый свет, дерево, пар над чашкой. Заходите — это надо видеть.</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="logo">
+          <div class="logo-mark">Г</div>
+          <div class="logo-text" style="color:#fff">ГРИНВИЧ<small style="color:var(--ochre)">Coffee house</small></div>
+        </div>
+        <p>Сеть атмосферных кофеен. Обжариваем зерно сами, печём каждое утро, любим своих гостей.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Меню</h4>
+        <ul>
+          <li><a href="#menu">Кофе</a></li>
+          <li><a href="#menu">Десерты</a></li>
+          <li><a href="#menu">Завтраки</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>Гостям</h4>
+        <ul>
+          <li><a href="#bonuses">Бонусы</a></li>
+          <li><a href="#booking">Бронирование</a></li>
+          <li><a href="#promos">Акции</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>Контакты</h4>
+        <ul>
+          <li><a href="tel:+79001234567">+7 900 123-45-67</a></li>
+          <li><a href="mailto:hello@grinvich.coffee">hello@grinvich.coffee</a></li>
+          <li><a href="#locations">Все кофейни</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2025 ГРИНВИЧ. Все права защищены.</span>
+      <span class="admin-link" onclick="openAdmin()">Панель управления</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ ADMIN FAB ============ -->
+<button class="admin-fab" onclick="openAdmin()" title="Админка">⚙</button>
+
+<!-- ============ ADMIN MODAL ============ -->
+<div class="modal" id="adminModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="adminTitle">Вход в админку</h3>
+      <button class="modal-close" onclick="closeAdmin()">×</button>
+    </div>
+    <div class="modal-body" id="adminBody"></div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"></div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* =========================================================
+   ДАННЫЕ (по умолчанию; правятся через админку → localStorage)
+   ========================================================= */
+const DEFAULT_MENU = [
+  {id:1, name:'Эспрессо',        desc:'Двойной шот из бразильской Санта-Терезы. Плотный, с нотами какао.', price:180, cat:'coffee',    tags:['vegan','lactose-free','gluten-free'], img:'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?w=600&q=80'},
+  {id:2, name:'Капучино',        desc:'Классика с плотной молочной пенкой. На альтернативном молоке — по запросу.', price:260, cat:'coffee',    tags:[], img:'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=600&q=80'},
+  {id:3, name:'Латте на овсяном',desc:'Мягкий и обволакивающий. Овсяное молоко варим сами.', price:290, cat:'coffee',    tags:['vegan','lactose-free'], img:'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&q=80'},
+  {id:4, name:'Флэт уайт',       desc:'Двойной эспрессо и микропенка. Для тех, кто любит покрепче.', price:280, cat:'coffee',    tags:[], img:'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&q=80'},
+  {id:5, name:'Колд брю',        desc:'12 часов холодной экстракции. Подаём со льдом и апельсином.', price:320, cat:'coffee',    tags:['vegan','lactose-free','gluten-free'], img:'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&q=80'},
+  {id:6, name:'Раф на лаванде',  desc:'Сливочный, с нотками лаванды и мёда. Наш хит.', price:340, cat:'coffee',    tags:['new'], img:'https://images.unsplash.com/photo-1595434091143-b375ced5fe5c?w=600&q=80'},
+
+  {id:7, name:'Круассан',        desc:'Слоёный, с хрустящей корочкой. Печём каждое утро.', price:190, cat:'desserts',  tags:[], img:'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80'},
+  {id:8, name:'Чизкейк Нью-Йорк',desc:'Плотный, сливочный, с ягодным соусом.', price:320, cat:'desserts',  tags:[], img:'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=600&q=80'},
+  {id:9, name:'Брауни без глютена',desc:'Влажный, с грецким орехом. На миндальной муке.', price:280, cat:'desserts',  tags:['vegetarian','gluten-free'], img:'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&q=80'},
+  {id:10,name:'Тирамису',        desc:'Классический, с маскарпоне и эспрессо.', price:340, cat:'desserts',  tags:[], img:'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=600&q=80'},
+
+  {id:11,name:'Авокадо-тост',    desc:'Ржаной хлеб, гуакамоле, яйцо пашот, семена чиа.', price:420, cat:'breakfast', tags:['vegetarian'], img:'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=600&q=80'},
+  {id:12,name:'Овсяная каша',    desc:'На кокосовом молоке, с карамелизированным бананом.', price:290, cat:'breakfast', tags:['vegan','lactose-free'], img:'https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=600&q=80'},
+  {id:13,name:'Сырники',         desc:'Со сметаной и домашним вареньем.', price:360, cat:'breakfast', tags:['vegetarian'], img:'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80'},
+  {id:14,name:'Гранола с йогуртом',desc:'Домашняя гранола, греческий йогурт, свежие ягоды.', price:310, cat:'breakfast', tags:['vegetarian'], img:'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=600&q=80'},
+];
+
+const DEFAULT_LOCATIONS = [
+  {id:1, name:'ГРИНВИЧ на Патриарших', address:'Москва, Малая Бронная, 24с1', hours:'Пн–Вс 08:00–23:00', phone:'+7 900 123-45-67', coords:[55.7634,37.5913]},
+  {id:2, name:'ГРИНВИЧ на Покровке',   address:'Москва, Покровка, 17',        hours:'Пн–Вс 09:00–22:00', phone:'+7 900 123-45-68', coords:[55.7590,37.6440]},
+  {id:3, name:'ГРИНВИЧ в Хамовниках',  address:'Москва, Пречистенка, 30',     hours:'Пн–Вс 08:30–22:30', phone:'+7 900 123-45-69', coords:[55.7440,37.5970]},
+  {id:4, name:'ГРИНВИЧ на Никитской',  address:'Москва, Большая Никитская, 12',hours:'Пн–Пт 08:00–22:00, Сб–Вс 10:00–23:00', phone:'+7 900 123-45-70', coords:[55.7565,37.6060]},
+  {id:5, name:'ГРИНВИЧ в Сокольниках', address:'Москва, Сокольническая пл., 4',hours:'Пн–Вс 09:00–21:00', phone:'+7 900 123-45-71', coords:[55.7890,37.6790]},
+];
+
+const DEFAULT_PROMOS = [
+  {id:1, title:'−20% на все завтраки', date:'до 30 ноября', text:'Каждый будний день с 8 до 11 утра — скидка 20% на всё меню завтраков. Приходите до работы!', img:'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&q=80'},
+  {id:2, title:'Двойные баллы по выходным', date:'каждые сб и вс', text:'За любую покупку в субботу и воскресенье начисляем двойные баллы. Копите быстрее!', img:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'},
+  {id:3, title:'Приведи друга', date:'бессрочно', text:'Расскажите о нас другу — и получите по 300 баллов на счёт, когда он сделает первый заказ.', img:'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=800&q=80'},
+];
+
+const DEFAULT_GALLERY = [
+  {img:'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80', size:''},
+  {img:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&q=80', size:'tall'},
+  {img:'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=800&q=80', size:''},
+  {img:'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=80', size:''},
+  {img:'https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=800&q=80', size:'wide'},
+  {img:'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=800&q=80', size:''},
+  {img:'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=800&q=80', size:''},
+  {img:'https://images.unsplash.com/photo-1525610553991-2bede1a236e2?w=800&q=80', size:'tall'},
+];
+
+const DEFAULT_BONUSES = {
+  '+79001234567': {name:'Анна',      balance:1240, level:'Серебро'},
+  '+79000001122': {name:'Дмитрий',   balance:420,  level:'Бронза'},
+  '+79005556677': {name:'Екатерина', balance:3150, level:'Золото'},
+};
+
+/* =========================================================
+   ХРАНИЛИЩЕ
+   ========================================================= */
+const store = {
+  get(key, fallback){
+    try{
+      const raw = localStorage.getItem('grinvich_'+key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){ return fallback; }
+  },
+  set(key, val){ localStorage.setItem('grinvich_'+key, JSON.stringify(val)); },
+  reset(key){ localStorage.removeItem('grinvich_'+key); }
+};
+
+let MENU      = store.get('menu',      DEFAULT_MENU);
+let LOCATIONS = store.get('locations', DEFAULT_LOCATIONS);
+let PROMOS    = store.get('promos',    DEFAULT_PROMOS);
+const GALLERY = DEFAULT_GALLERY;
+
+/* =========================================================
+   NAV
+   ========================================================= */
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+});
+document.getElementById('burger').addEventListener('click', () => {
+  document.getElementById('navLinks').classList.toggle('open');
+});
+document.querySelectorAll('#navLinks a').forEach(a => {
+  a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open'));
+});
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* =========================================================
+   МЕНЮ
+   ========================================================= */
+let activeCat = 'all';
+let activeTags = new Set();
+
+function renderMenu(){
+  const grid = document.getElementById('menuGrid');
+  const items = MENU.filter(item => {
+    if(activeCat !== 'all' && item.cat !== activeCat) return false;
+    for(const tag of activeTags){
+      if(!item.tags.includes(tag)) return false;
+    }
+    return true;
+  });
+
+  if(!items.length){
+    grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:3rem 0;font-style:italic">Ничего не нашлось — попробуйте убрать фильтры.</p>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(item => `
+    <article class="menu-card">
+      <div class="photo">
+        ${item.tags.includes('new') ? '<span class="badge">Новинка</span>' : ''}
+        <img src="${item.img}" alt="${item.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80'">
+      </div>
+      <div class="body">
+        <h3>${item.name}</h3>
+        <p class="desc">${item.desc}</p>
+        <div class="tags">
+          ${item.tags.filter(t=>t!=='new').map(t=>`<span class="tag ${t}">${tagLabel(t)}</span>`).join('')}
+        </div>
+        <div class="price">${item.price} ₽</div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function tagLabel(t){
+  return {vegan:'Вегетарианское', vegetarian:'Вегетарианское', 'lactose-free':'Безлактозное', 'gluten-free':'Без глютена'}[t] || t;
+}
+
+document.querySelectorAll('#tabs .tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tabs .tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCat = btn.dataset.cat;
+    renderMenu();
+  });
+});
+
+document.querySelectorAll('#filters .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const tag = chip.dataset.tag;
+    if(activeTags.has(tag)){ activeTags.delete(tag); chip.classList.remove('active'); }
+    else { activeTags.add(tag); chip.classList.add('active'); }
+    renderMenu();
+  });
+});
+
+/* =========================================================
+   КАРТА
+   ========================================================= */
+let map, markers = [], activeLocId = null;
+
+function initMap(){
+  map = L.map('map', {scrollWheelZoom:false}).setView([55.7600,37.6200], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap', maxZoom:19
+  }).addTo(map);
+
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="width:38px;height:38px;background:#B85C38;border:3px solid #F7F1E8;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 6px 16px rgba(0,0,0,.4);display:grid;place-items:center"><div style="width:12px;height:12px;background:#F7F1E8;border-radius:50%"></div></div>`,
+    iconSize:[38,38], iconAnchor:[19,38], popupAnchor:[0,-38]
+  });
+
+  LOCATIONS.forEach(loc => {
+    const m = L.marker(loc.coords, {icon}).addTo(map);
+    m.bindPopup(`
+      <h4>${loc.name}</h4>
+      <div style="color:#7A6A5C;margin-bottom:.3rem">${loc.address}</div>
+      <div style="font-size:.82rem"><b>Часы:</b> ${loc.hours}</div>
+      <div style="font-size:.82rem;margin-top:.2rem"><b>Тел:</b> ${loc.phone}</div>
+      <button class="route-btn" onclick="buildRoute(${loc.coords[0]},${loc.coords[1]})">Построить маршрут</button>
+    `);
+    m.on('click', () => highlightLoc(loc.id));
+    markers.push({id:loc.id, marker:m});
+  });
+
+  renderLocList();
+}
+
+function renderLocList(){
+  const list = document.getElementById('locList');
+  list.innerHTML = LOCATIONS.map(loc => `
+    <div class="loc-card" data-id="${loc.id}" onclick="focusLoc(${loc.id})">
+      <h4>${loc.name}</h4>
+      <div class="meta">${loc.address}</div>
+      <div class="meta">${loc.phone}</div>
+      <span class="hours">${loc.hours}</span>
+    </div>
+  `).join('');
+}
+
+function focusLoc(id){
+  const loc = LOCATIONS.find(l => l.id === id);
+  if(!loc) return;
+  map.flyTo(loc.coords, 15, {duration:.8});
+  markers.find(m => m.id === id)?.marker.openPopup();
+  highlightLoc(id);
+}
+
+function highlightLoc(id){
+  activeLocId = id;
+  document.querySelectorAll('.loc-card').forEach(c => {
+    c.classList.toggle('active', +c.dataset.id === id);
+  });
+}
+
+function buildRoute(lat, lng){
+  window.open(`https://yandex.ru/maps/?rtext=~${lat},${lng}&rtt=auto`, '_blank');
+}
+
+/* =========================================================
+   БОНУСЫ
+   ========================================================= */
+function normalizePhone(p){
+  return p.replace(/[^\d+]/g,'').replace(/^8/,'+7');
+}
+
+function checkBonus(){
+  const input = document.getElementById('bonusPhone');
+  const phone = normalizePhone(input.value);
+  const result = document.getElementById('bonusResult');
+  const bonuses = store.get('bonuses', DEFAULT_BONUSES);
+
+  if(phone.length < 11){
+    toast('Введите номер полностью');
+    return;
+  }
+
+  const client = bonuses[phone];
+  if(client){
+    result.innerHTML = `
+      <div class="name">${client.name}, ваш баланс:</div>
+      <div class="bal">${client.balance.toLocaleString('ru-RU')} <span style="font-size:1.2rem;font-weight:400">баллов</span></div>
+      <span class="lvl">Уровень: ${client.level}</span>
+    `;
+    result.classList.add('show');
+    // анимация счётчика на "арт"
+    animateNumber(client.balance);
+  } else {
+    result.innerHTML = `
+      <div class="name">Не нашли вас в базе 😔</div>
+      <div style="font-size:.9rem;margin-top:.5rem;opacity:.85">Скажите номер на кассе при следующем заказе — и мы зачислим приветственные 200 баллов.</div>
+    `;
+    result.classList.add('show');
+    animateNumber(0);
+  }
+}
+
+function animateNumber(target){
+  const el = document.getElementById('bonusDisplay');
+  const start = 0;
+  const dur = 900;
+  const t0 = performance.now();
+  function step(now){
+    const p = Math.min((now - t0) / dur, 1);
+    const eased = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(start + (target - start) * eased).toLocaleString('ru-RU');
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* =========================================================
+   БРОНИРОВАНИЕ
+   ========================================================= */
+function fillBookingLocations(){
+  const sel = document.getElementById('bLocation');
+  sel.innerHTML = LOCATIONS.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+}
+
+function submitBooking(e){
+  e.preventDefault();
+  const data = {
+    location: document.getElementById('bLocation').selectedOptions[0].textContent,
+    guests:   document.getElementById('bGuests').value,
+    date:     document.getElementById('bDate').value,
+    time:     document.getElementById('bTime').value,
+    name:     document.getElementById('bName').value,
+    phone:    document.getElementById('bPhone').value,
+    email:    document.getElementById('bEmail').value,
+    note:     document.getElementById('bNote').value,
+    ts:       new Date().toISOString()
+  };
+
+  // здесь можно отправить на реальный бэкенд:
+  // fetch('/api/booking', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)})
+
+  // сохраняем в localStorage (демо)
+  const bookings = store.get('bookings', []);
+  bookings.push(data);
+  store.set('bookings', bookings);
+
+  document.getElementById('bookingSummary').textContent =
+    `${data.name}, ждём вас ${data.date} в ${data.time}, ${data.location}. Гостей: ${data.guests}.`;
+  document.getElementById('bookingForm').style.display = 'none';
+  document.getElementById('bookingSuccess').classList.add('show');
+
+  // имитация отправки SMS/e-mail
+  toast('Подтверждение отправлено на ' + data.email);
+}
+
+function resetBooking(){
+  document.getElementById('bookingForm').reset();
+  document.getElementById('bookingForm').style.display = 'block';
+  document.getElementById('bookingSuccess').classList.remove('show');
+  setMinDate();
+}
+
+function setMinDate(){
+  const d = new Date();
+  const iso = d.toISOString().split('T')[0];
+  const input = document.getElementById('bDate');
+  input.min = iso;
+  if(!input.value) input.value = iso;
+}
+
+/* =========================================================
+   АКЦИИ
+   ========================================================= */
+function renderPromos(){
+  document.getElementById('promoGrid').innerHTML = PROMOS.map(p => `
+    <article class="promo-card">
+      <div class="photo"><img src="${p.img}" alt="${p.title}" loading="lazy"></div>
+      <div class="body">
+        <div class="date">${p.date}</div>
+        <h3>${p.title}</h3>
+        <p>${p.text}</p>
+      </div>
+    </article>
+  `).join('');
+}
+
+/* =========================================================
+   ГАЛЕРЕЯ + ЛАЙТБОКС
+   ========================================================= */
+function renderGallery(){
+  document.getElementById('galleryGrid').innerHTML = GALLERY.map((g,i) => `
+    <div class="g-item ${g.size}" onclick="openLightbox('${g.img}')">
+      <img src="${g.img}" alt="Атмосфера ГРИНВИЧ" loading="lazy">
+    </div>
+  `).join('');
+}
+
+function openLightbox(src){
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(27,17,11,.92);z-index:5000;display:grid;place-items:center;cursor:zoom-out;padding:30px;animation:fadeIn .3s';
+  div.innerHTML = `<img src="${src}" style="max-width:100%;max-height:90vh;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.6)">`;
+  div.onclick = () => div.remove();
+  document.body.appendChild(div);
+}
+
+/* =========================================================
+   АДМИНКА
+   ========================================================= */
+let isAuthed = false;
+const ADMIN_PASSWORD = 'admin';
+
+function openAdmin(){
+  document.getElementById('adminModal').classList.add('show');
+  if(isAuthed){ renderAdminPanel(); }
+  else { renderAdminLogin(); }
+}
+
+function closeAdmin(){
+  document.getElementById('adminModal').classList.remove('show');
+}
+
+function renderAdminLogin(){
+  document.getElementById('adminTitle').textContent = 'Вход в админку';
+  document.getElementById('adminBody').innerHTML = `
+    <p style="color:var(--muted);font-size:.92rem;margin-bottom:1.2rem">
+      Демо-пароль: <b style="color:var(--terra)">admin</b>. В реальном проекте здесь будет серверная авторизация.
+    </p>
+    <div class="field">
+      <label>Пароль</label>
+      <input type="password" id="adminPass" placeholder="••••••" onkeydown="if(event.key==='Enter')tryLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.5rem" onclick="tryLogin()">Войти</button>
+  `;
+  setTimeout(() => document.getElementById('adminPass')?.focus(), 100);
+}
+
+function tryLogin(){
+  const val = document.getElementById('adminPass').value;
+  if(val === ADMIN_PASSWORD){
+    isAuthed = true;
+    renderAdminPanel();
+    toast('Добро пожаловать в админку');
+  } else {
+    toast('Неверный пароль');
+  }
+}
+
+let adminTab = 'menu';
+
+function renderAdminPanel(){
+  document.getElementById('adminTitle').textContent = 'Панель управления';
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <div class="admin-note">
+      Изменения сохраняются <b>локально в браузере</b>. В реальном проекте правки уйдут в CMS / на сервер.
+    </div>
+    <div class="admin-tabs">
+      <button class="${adminTab==='menu'?'active':''}" onclick="switchTab('menu')">Меню и цены</button>
+      <button class="${adminTab==='promos'?'active':''}" onclick="switchTab('promos')">Акции</button>
+      <button class="${adminTab==='bookings'?'active':''}" onclick="switchTab('bookings')">Заявки</button>
+      <button onclick="resetAll()" style="margin-left:auto;color:var(--terra);border-color:var(--terra)">Сбросить всё</button>
+    </div>
+    <div id="adminContent"></div>
+  `;
+  renderAdminContent();
+}
+
+function switchTab(t){ adminTab = t; renderAdminPanel(); }
+
+function renderAdminContent(){
+  const c = document.getElementById('adminContent');
+  if(adminTab === 'menu'){
+    c.innerHTML = MENU.map(item => `
+      <div class="admin-row">
+        <input value="${item.name}" onchange="editItem(${item.id},'name',this.value)">
+        <input type="number" value="${item.price}" onchange="editItem(${item.id},'price',+this.value)">
+        <select onchange="editItem(${item.id},'cat',this.value)">
+          <option value="coffee" ${item.cat==='coffee'?'selected':''}>Кофе</option>
+          <option value="desserts" ${item.cat==='desserts'?'selected':''}>Десерты</option>
+          <option value="breakfast" ${item.cat==='breakfast'?'selected':''}>Завтраки</option>
+        </select>
+        <button class="del" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
+      </div>
+    `).join('') + `
+      <button class="btn btn-primary" style="margin-top:1.2rem" onclick="addItem()">+ Добавить позицию</button>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:.8rem">Меняйте название, цену и категорию. Изменения сразу на сайте.</p>
+    `;
+  }
+  if(adminTab === 'promos'){
+    c.innerHTML = PROMOS.map(p => `
+      <div class="admin-row" style="grid-template-columns:1fr auto">
+        <input value="${p.title}" onchange="editPromo(${p.id},'title',this.value)">
+        <button class="del" onclick="deletePromo(${p.id})">✕</button>
+      </div>
+      <div class="admin-row" style="grid-template-columns:1fr">
+        <input value="${p.date}" onchange="editPromo(${p.id},'date',this.value)" placeholder="дата/срок">
+      </div>
+      <div class="admin-row" style="grid-template-columns:1fr;border-bottom:1px solid var(--line);padding-bottom:1rem">
+        <textarea onchange="editPromo(${p.id},'text',this.value)" rows="2" style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:.85rem">${p.text}</textarea>
+      </div>
+    `).join('') + `
+      <button class="btn btn-primary" style="margin-top:1.2rem" onclick="addPromo()">+ Добавить акцию</button>
+    `;
+  }
+  if(adminTab === 'bookings'){
+    const bookings = store.get('bookings', []);
+    if(!bookings.length){
+      c.innerHTML = `<p style="color:var(--muted);text-align:center;padding:2rem 0">Пока нет заявок.</p>`;
+    } else {
+      c.innerHTML = bookings.slice().reverse().map(b => `
+        <div class="admin-row" style="grid-template-columns:1fr auto;align-items:start">
+          <div>
+            <div style="font-weight:500">${b.name} · ${b.phone}</div>
+            <div style="font-size:.85rem;color:var(--muted)">${b.location} · ${b.date} в ${b.time} · ${b.guests} гост.</div>
+            <div style="font-size:.8rem;color:var(--muted)">${b.email}${b.note ? ' · «'+b.note+'»' : ''}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+function editItem(id, field, val){
+  MENU = MENU.map(i => i.id === id ? {...i, [field]:val} : i);
+  store.set('menu', MENU);
+  renderMenu();
+  toast('Сохранено');
+}
+function deleteItem(id){
+  if(!confirm('Удалить позицию?')) return;
+  MENU = MENU.filter(i => i.id !== id);
+  store.set('menu', MENU);
+  renderMenu(); renderAdminContent();
+  toast('Удалено');
+}
+function addItem(){
+  const id = Date.now();
+  MENU.push({id, name:'Новая позиция', desc:'Описание', price:200, cat:'coffee', tags:[], img:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80'});
+  store.set('menu', MENU);
+  renderMenu(); renderAdminContent();
+}
+
+function editPromo(id, field, val){
+  PROMOS = PROMOS.map(p => p.id === id ? {...p, [field]:val} : p);
+  store.set('promos', PROMOS);
+  renderPromos();
+  toast('Сохранено');
+}
+function deletePromo(id){
+  if(!confirm('Удалить акцию?')) return;
+  PROMOS = PROMOS.filter(p => p.id !== id);
+  store.set('promos', PROMOS);
+  renderPromos(); renderAdminContent();
+}
+function addPromo(){
+  PROMOS.unshift({
+    id:Date.now(),
+    title:'Новая акция',
+    date:'дата',
+    text:'Описание акции',
+    img:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'
+  });
+  store.set('promos', PROMOS);
+  renderPromos(); renderAdminContent();
+}
+
+function resetAll(){
+  if(!confirm('Сбросить все данные к исходным?')) return;
+  ['menu','promos','bookings'].forEach(k => store.reset(k));
+  MENU = DEFAULT_MENU; PROMOS = DEFAULT_PROMOS;
+  renderMenu(); renderPromos(); renderAdminContent();
+  toast('Данные сброшены');
+}
+
+/* =========================================================
+   СТАРТ
+   ========================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  renderMenu();
+  renderPromos();
+  renderGallery();
+  fillBookingLocations();
+  setMinDate();
+  initMap();
+});
+
+window.addEventListener('resize', () => map && map.invalidateSize());
+</script>
+</body>
+</html>
